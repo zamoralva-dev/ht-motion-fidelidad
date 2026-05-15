@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HT in Motion — Tarjeta de Beneficios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black:       #07070a;
+  --surface:     #0d0c12;
+  --white:       #f0eef8;
+  --muted:       #6b697a;
+  --border-soft: rgba(255,255,255,0.055);
+  --ac:          #6420c8;
+  --ac-light:    #9d6eee;
+  --ac-pale:     rgba(100,32,200,0.11);
+  --ac-border:   rgba(100,32,200,0.25);
+  --ac-glow:     rgba(100,32,200,0.28);
+}
+
+html, body {
+  min-height: 100vh; background: #050508;
+  font-family: 'DM Sans', sans-serif; color: var(--white);
+  display: flex; justify-content: center;
+}
+.phone {
+  width: 100%; max-width: 390px; min-height: 100vh;
+  background: var(--black); padding-bottom: 100px;
+  animation: fadeIn 0.5s ease both;
+}
+
+/* LOADING */
+#loading {
+  position: fixed; inset: 0; background: #050508;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 1000; gap: 28px;
+}
+.load-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 300; color: var(--white);
+  letter-spacing: 0.06em;
+}
+.load-sub {
+  font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--muted); margin-top: -20px;
+}
+.load-ring {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid rgba(100,32,200,0.2);
+  border-top-color: var(--ac);
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ERROR */
+#errorScreen {
+  position: fixed; inset: 0; background: #050508;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 999; padding: 32px; gap: 12px;
+}
+.err-icon  { font-size: 36px; color: var(--muted); margin-bottom: 4px; }
+.err-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 300; color: var(--white); text-align: center;
+}
+.err-body  { font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.65; max-width: 270px; }
+.err-code  { font-size: 9px; letter-spacing: 0.2em; color: rgba(107,105,122,0.4); margin-top: 6px; }
+
+/* TOP BAR */
+.top-bar { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px 0; }
+.top-time { font-size: 13px; font-weight: 600; color: var(--white); }
+.top-icons { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; }
+
+/* CARD */
+.card-wrap { padding: 16px 18px 0; animation: riseIn 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+.card {
+  border-radius: 22px; padding: 26px 22px 22px;
+  position: relative; overflow: hidden; min-height: 186px;
+  background: linear-gradient(150deg, #110e1e 0%, #0a0910 55%, #130f1f 100%);
+  border: 1px solid var(--ac-border);
+  box-shadow: 0 36px 72px rgba(0,0,0,0.65), inset 0 1px 0 rgba(100,32,200,0.15), inset 0 -1px 0 rgba(0,0,0,0.4);
+  transition: border-color 0.4s;
+}
+.card::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 180px; opacity: 0.5; pointer-events: none; border-radius: 22px;
+}
+.glow-tr { position: absolute; top:-55px; right:-55px; width:200px; height:200px; background: radial-gradient(circle, var(--ac-glow) 0%, transparent 65%); pointer-events:none; }
+.glow-bl { position: absolute; bottom:-35px; left:-35px; width:150px; height:150px; background: radial-gradient(circle, var(--ac-pale) 0%, transparent 70%); pointer-events:none; }
+
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; position: relative; z-index: 1; }
+.card-logo-wrap { display: flex; flex-direction: column; gap: 5px; }
+.card-logo-img  { height: 30px; width: auto; object-fit: contain; }
+.card-logo-text { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 300; color: var(--white); letter-spacing: 0.06em; }
+.card-logo-sub  { font-size: 8px; font-weight: 300; letter-spacing: 0.32em; color: var(--muted); text-transform: uppercase; }
+
+.seal { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.seal-ring {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1.5px solid var(--ac-light);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; animation: ringPulse 3.5s ease-in-out infinite; transition: border-color 0.4s;
+}
+.seal-ring::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 0.5px solid var(--ac-pale); }
+.seal-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ac-light); box-shadow: 0 0 10px var(--ac-light), 0 0 20px var(--ac-glow); transition: background 0.4s, box-shadow 0.4s; }
+.seal-label { font-size: 8px; letter-spacing: 0.2em; color: var(--ac-light); text-transform: uppercase; font-weight: 500; transition: color 0.4s; }
+@keyframes ringPulse { 0%,100% { box-shadow: 0 0 0 0 var(--ac-glow); } 50% { box-shadow: 0 0 0 6px transparent; } }
+
+.card-body { position: relative; z-index: 1; }
+.client-name  { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; letter-spacing: 0.01em; color: var(--white); line-height: 1; margin-bottom: 3px; }
+.client-since { font-size: 10px; color: var(--muted); letter-spacing: 0.14em; }
+.card-rule    { height: 1px; background: linear-gradient(90deg, transparent, var(--ac-border), transparent); margin: 16px 0; transition: background 0.4s; }
+.card-footer  { display: flex; justify-content: space-between; align-items: flex-end; }
+.card-id   { font-size: 9.5px; color: var(--muted); letter-spacing: 0.22em; }
+.card-year { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--ac-pale); line-height: 1; letter-spacing: -0.02em; }
+
+/* ALERT */
+.alert {
+  margin: 15px 18px 0;
+  background: linear-gradient(135deg, var(--ac-pale), rgba(0,0,0,0));
+  border: 1px solid var(--ac-border); border-radius: 14px;
+  padding: 13px 15px; display: flex; align-items: flex-start; gap: 11px;
+  animation: riseIn 0.6s 0.08s cubic-bezier(0.16,1,0.3,1) both, alertBreath 5s 1s ease-in-out infinite;
+  transition: border-color 0.4s, background 0.4s;
+}
+.alert-icon  { font-size: 16px; flex-shrink: 0; padding-top: 1px; }
+.alert-title { font-size: 11.5px; font-weight: 500; color: var(--ac-light); margin-bottom: 2px; line-height: 1.3; transition: color 0.4s; }
+.alert-body  { font-size: 10px; color: var(--muted); line-height: 1.55; }
+@keyframes alertBreath { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 20px var(--ac-pale); } }
+
+/* CASHBACK */
+.cashback-strip {
+  margin: 14px 18px 0;
+  background: linear-gradient(90deg, #110e1e, #0d0c16, #110e1e);
+  border: 1px solid var(--ac-border); border-radius: 14px;
+  padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
+  transition: border-color 0.4s;
+}
+.cashback-label { font-size: 9.5px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; }
+.cashback-sub   { font-size: 9px; color: var(--muted); margin-top: 2px; }
+.cashback-val   { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; color: var(--ac-light); line-height: 1; transition: color 0.4s; }
+
+/* SECTIONS */
+.section { padding: 24px 18px 0; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.sec-label { font-size: 9.5px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); }
+
+/* BENEFITS */
+.benefit-list { display: flex; flex-direction: column; gap: 7px; }
+.benefit-row {
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 13px; padding: 13px 15px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.25s;
+}
+.benefit-row.unlocked { border-color: var(--ac-border); background: linear-gradient(135deg, #110e1c, #0d0b14); }
+.benefit-row.unlocked::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ac-light), transparent); opacity: 0.35;
+}
+.benefit-row.locked { opacity: 0.45; }
+.benefit-ico { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.benefit-row.unlocked .benefit-ico { background: var(--ac-pale); }
+.benefit-info { flex: 1; min-width: 0; }
+.benefit-name   { font-size: 12.5px; font-weight: 500; color: var(--white); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.benefit-detail { font-size: 10px; color: var(--muted); line-height: 1.5; }
+.benefit-right  { text-align: right; flex-shrink: 0; }
+.benefit-pct    { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; color: var(--ac-light); line-height: 1; transition: color 0.4s; }
+.benefit-pct.locked-val { color: var(--muted); font-size: 14px; }
+.benefit-tag { display: inline-block; font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--ac-pale); color: var(--ac-light); padding: 3px 7px; border-radius: 4px; font-weight: 500; margin-top: 3px; transition: background 0.4s, color 0.4s; }
+.benefit-tag.locked-tag { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+/* REFERRAL */
+.referral-card {
+  background: linear-gradient(135deg, #110e1e, #0d0b14);
+  border: 1px solid var(--ac-border); border-radius: 16px; padding: 18px;
+  position: relative; overflow: hidden; transition: border-color 0.4s;
+}
+.referral-card::before { content: ''; position: absolute; top: 0; right: 0; width: 110px; height: 110px; background: radial-gradient(circle at top right, var(--ac-pale), transparent 70%); }
+.ref-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.ref-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 400; color: var(--white); line-height: 1.25; max-width: 60%; }
+.ref-amount-num   { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; color: var(--ac-light); line-height: 1; text-align: right; transition: color 0.4s; }
+.ref-amount-label { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; margin-top: 2px; text-align: right; }
+.ref-body { font-size: 10.5px; color: var(--muted); line-height: 1.65; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; }
+.ref-body strong { color: var(--ac-light); font-weight: 500; transition: color 0.4s; }
+.ref-cta {
+  display: block; margin-top: 13px; background: var(--ac); color: var(--white);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 10px 16px; border-radius: 8px; cursor: pointer; border: none;
+  width: 100%; text-align: center; font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 4px 20px var(--ac-glow); transition: background 0.4s, opacity 0.2s;
+}
+.ref-cta:active { opacity: 0.8; }
+
+/* PROMO */
+.promo-row {
+  background: var(--surface); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 13px; padding: 15px; display: flex; align-items: center; gap: 13px;
+  position: relative; overflow: hidden;
+}
+.promo-row.featured { border-color: var(--ac-border); background: linear-gradient(135deg, #110e1c, #0d0b14); transition: border-color 0.4s; }
+.promo-row.featured::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--ac-light), transparent); opacity: 0.35; }
+.promo-badge { background: var(--ac); color: var(--white); font-size: 8.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 9px; border-radius: 7px; flex-shrink: 0; line-height: 1.3; text-align: center; box-shadow: 0 2px 12px var(--ac-glow); transition: background 0.4s; }
+.promo-content { flex: 1; }
+.promo-title { font-size: 12.5px; font-weight: 500; color: var(--white); margin-bottom: 3px; line-height: 1.3; }
+.promo-sub   { font-size: 10px; color: var(--muted); line-height: 1.5; }
+.promo-chevron { color: var(--ac-light); font-size: 16px; opacity: 0.5; }
+
+/* NEWS */
+.news-list { display: flex; flex-direction: column; }
+.news-row { display: flex; align-items: flex-start; gap: 12px; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.news-row:last-child { border-bottom: none; }
+.news-pip { width: 5px; height: 5px; border-radius: 50%; background: var(--ac-light); flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 6px var(--ac-glow); transition: background 0.4s, box-shadow 0.4s; }
+.news-pip.read { background: var(--muted); box-shadow: none; }
+.news-title { font-size: 12px; font-weight: 500; color: var(--white); line-height: 1.45; margin-bottom: 3px; }
+.news-date  { font-size: 9.5px; color: var(--muted); letter-spacing: 0.1em; }
+
+/* NAV */
+.nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 390px; background: rgba(7,7,10,0.96); backdrop-filter: blur(24px); border-top: 1px solid rgba(255,255,255,0.055); display: flex; justify-content: space-around; padding: 11px 0 22px; z-index: 200; }
+.nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; opacity: 0.35; }
+.nav-btn.on { opacity: 1; }
+.nav-ico { font-size: 17px; }
+.nav-lbl { font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.nav-btn.on .nav-lbl { color: var(--ac-light); }
+
+@keyframes riseIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+.spacer { height: 90px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div>
+    <div class="load-wordmark">HT in Motion</div>
+    <div class="load-sub">Salud · Entrenamiento · Rehabilitación</div>
+  </div>
+  <div class="load-ring"></div>
+</div>
+
+<!-- ERROR -->
+<div id="errorScreen" style="display:none">
+  <div class="err-icon">◇</div>
+  <div class="err-title">Tarjeta no encontrada</div>
+  <div class="err-body" id="errMsg">Este enlace no corresponde a un cliente registrado. Contacta a recepción para más información.</div>
+  <div class="err-code" id="errCode"></div>
+</div>
+
+<!-- CARD -->
+<div class="phone" id="cardView" style="display:none">
+
+  <div class="top-bar">
+    <span class="top-time" id="topTime">9:41</span>
+    <span class="top-icons">▲▲▲ ⬛</span>
+  </div>
+
+  <div class="card-wrap">
+    <div class="card">
+      <div class="glow-tr"></div><div class="glow-bl"></div>
+      <div class="card-top">
+        <div class="card-logo-wrap">
+          <img class="card-logo-img" src="../assets/HT_blanco.png" alt="HT in Motion"
+               onerror="this.style.display='none';document.getElementById('logoText').style.display='block'">
+          <span class="card-logo-text" id="logoText" style="display:none">HT in Motion</span>
+          <span class="card-logo-sub">Salud · Entrenamiento · Rehabilitación</span>
+        </div>
+        <div class="seal">
+          <div class="seal-ring"><div class="seal-dot"></div></div>
+          <div class="seal-label" id="sealLabel">Activo</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="client-name" id="clientName">—</div>
+        <div class="client-since" id="clientSince"></div>
+        <div class="card-rule"></div>
+        <div class="card-footer">
+          <span class="card-id" id="cardId">HTM · —</span>
+          <span class="card-year" id="cardYear">2026</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert">
+    <span class="alert-icon">⚡</span>
+    <div>
+      <div class="alert-title" id="alertTitle"></div>
+      <div class="alert-body"  id="alertBody"></div>
+    </div>
+  </div>
+
+  <div class="cashback-strip" id="cashbackStrip" style="display:none">
+    <div>
+      <div class="cashback-label">Cashback disponible</div>
+      <div class="cashback-sub">Válido en servicios HT</div>
+    </div>
+    <div><div class="cashback-val" id="cashbackVal">$0</div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><span class="sec-label">Tus Beneficios</span></div>
+    <div class="benefit-list" id="benefitList"></div>
+  </div>
+
+  <div class="section" id="referralSection" style="display:none">
+    <div class="sec-head"><span class="sec-label">Programa de Referidos</span></div>
+    <div class="referral-card">
+      <div class="ref-top">
+        <div class="ref-title">Invita a alguien.<br>Ambos ganan.</div>
+        <div>
+          <div class="ref-amount-num">$10.000</div>
+          <div class="ref-amount-label">cashback para ti</div>
+        </div>
+      </div>
+      <div class="ref-body">
+        Comparte tu enlace. Al inscribirse, <strong>recibes $10.000 en cashback</strong> para usar en cualquier servicio HT. Tu referido obtiene <strong>20% de descuento en su primer mes.</strong>
+      </div>
+      <button class="ref-cta" id="refBtn" onclick="copyLink()">Compartir enlace · <span id="refId"></span></button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><span class="sec-label">Promoción vigente</span></div>
+    <div class="promo-row featured">
+      <div class="promo-badge" id="promoBadge">Mayo<br>2026</div>
+      <div class="promo-content">
+        <div class="promo-title">Sesión de invitado gratis</div>
+        <div class="promo-sub">Trae a alguien a conocer HT este mes. Coordina en recepción.</div>
+      </div>
+      <span class="promo-chevron">›</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><span class="sec-label">Novedades</span></div>
+    <div class="news-list">
+      <div class="news-row">
+        <div class="news-pip"></div>
+        <div><div class="news-title">Nuevo servicio: Evaluación Postural Digital</div><div class="news-date">12 Mayo 2026</div></div>
+      </div>
+      <div class="news-row">
+        <div class="news-pip"></div>
+        <div><div class="news-title">Horario extendido — ahora hasta las 21:00 hrs</div><div class="news-date">5 Mayo 2026</div></div>
+      </div>
+      <div class="news-row">
+        <div class="news-pip read"></div>
+        <div><div class="news-title">North Iron Strength — Campeonato Nacional 2026</div><div class="news-date">28 Abril 2026</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div><!-- /.phone -->
+
+<div class="nav" id="navBar" style="display:none">
+  <div class="nav-btn on"><div class="nav-ico">◆</div><div class="nav-lbl">Tarjeta</div></div>
+  <div class="nav-btn"><div class="nav-ico">○</div><div class="nav-lbl">Beneficios</div></div>
+  <div class="nav-btn"><div class="nav-ico">◇</div><div class="nav-lbl">Novedades</div></div>
+  <div class="nav-btn"><div class="nav-ico">△</div><div class="nav-lbl">Mi Cuenta</div></div>
+</div>
+
+<script>
+/* ─── CONFIGURACIÓN ────────────────────────────────────────── */
+const API_URL = 'https://script.google.com/macros/s/REEMPLAZA_CON_TU_ID_DE_DEPLOYMENT/exec';
+/* ─────────────────────────────────────────────────────────── */
+
+const TIER_STYLES = {
+  miembro: { ac:'#6420c8', acLight:'#9d6eee', acPale:'rgba(100,32,200,0.11)', acBorder:'rgba(100,32,200,0.25)', acGlow:'rgba(100,32,200,0.28)' },
+  plus:    { ac:'#7c3de0', acLight:'#b39dfa', acPale:'rgba(139,92,246,0.11)', acBorder:'rgba(139,92,246,0.28)', acGlow:'rgba(139,92,246,0.3)'  },
+  premium: { ac:'#9f7aea', acLight:'#d4c5ff', acPale:'rgba(212,197,255,0.1)', acBorder:'rgba(212,197,255,0.25)','acGlow':'rgba(212,197,255,0.28)' }
+};
+
+function applyTierStyles(nivel) {
+  const s = TIER_STYLES[nivel] || TIER_STYLES.miembro;
+  const r = document.documentElement;
+  r.style.setProperty('--ac',        s.ac);
+  r.style.setProperty('--ac-light',  s.acLight);
+  r.style.setProperty('--ac-pale',   s.acPale);
+  r.style.setProperty('--ac-border', s.acBorder);
+  r.style.setProperty('--ac-glow',   s.acGlow);
+}
+
+function getBenefits(nivel) {
+  const isPlus    = nivel === 'plus' || nivel === 'premium';
+  const tierLabel = nivel === 'premium' ? 'Premium' : nivel === 'plus' ? 'Plus' : 'Activo';
+  return [
+    { ico:'💆', name:'Recovery',           detail:'Masoterapia y recuperación muscular', val: isPlus ? '25%'   : '15%',  tag: tierLabel,                  u: true    },
+    { ico:'🫁', name:'Cámara Hiperbárica', detail:'Oxigenoterapia hiperbárica',           val: isPlus ? '40%'   : '20%',  tag: tierLabel,                  u: true    },
+    { ico:'🦴', name:'Quiropraxia',         detail:'Ajuste quiropráctico',                val:'10%',                      tag:'Activo',                    u: true    },
+    { ico:'🥗', name:'Nutricionista',       detail:'Consulta nutricional',                val:'10%',                      tag:'Activo',                    u: true    },
+    { ico:'💊', name:'Suplementos HT',      detail:'Tienda interna HT',                   val: isPlus ? '10%'   : '5%',   tag: isPlus ? tierLabel : 'Activo', u: true  },
+    { ico:'🌸', name:'Piso Pélvico',        detail:'Evaluación gratuita para mujeres',    val:'Gratis',                   tag: isPlus ? 'Activo' : 'Desde 6 meses', u: isPlus },
+    { ico:'👥', name:'Sesión de invitado',  detail: isPlus ? 'Plan personalizado · 1/mes' : 'Plan personalizado requerido', val:'1/mes', tag: isPlus ? 'Activo' : 'Desde 6 meses', u: isPlus },
+    { ico:'🎁', name:'Referidos',            detail:'Cashback por nuevos miembros',        val:'$10K',                     tag: isPlus ? tierLabel : 'Desde 6 meses', u: isPlus },
+  ];
+}
+
+function getAlertText(nivel, meses) {
+  if (nivel === 'premium') {
+    return {
+      title: 'Nivel Premium activo',
+      body:  'Estás en el nivel máximo. Cada referido suma $10.000 en cashback disponible.'
+    };
+  }
+  if (nivel === 'plus') {
+    const faltan = 12 - meses;
+    return {
+      title: 'Nivel Plus activo',
+      body:  `En ${faltan} ${faltan === 1 ? 'mes' : 'meses'} más alcanzas el nivel Premium.`
+    };
+  }
+  const faltan = 6 - meses;
+  return {
+    title: 'Estás cerca del nivel Plus',
+    body:  `En ${faltan} ${faltan === 1 ? 'mes' : 'meses'} desbloqueas Recovery al 25%, Hiperbárica al 40%, Piso Pélvico gratuito y Referidos.`
+  };
+}
+
+function formatFechaInicio(fechaStr) {
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const parts = fechaStr.split('-');
+  if (parts.length < 2) return fechaStr;
+  return `Miembro desde ${MESES[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+}
+
+function formatCLP(amount) {
+  if (!amount) return '$0';
+  return '$' + Number(amount).toLocaleString('es-CL');
+}
+
+function updateClock() {
+  const now  = new Date();
+  const h    = String(now.getHours()).padStart(2, '0');
+  const m    = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('topTime').textContent = `${h}:${m}`;
+}
+
+function updatePromoBadge() {
+  const now    = new Date();
+  const MESES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('promoBadge').innerHTML = `${MESES[now.getMonth()]}<br>${now.getFullYear()}`;
+}
+
+function renderCard(data) {
+  const { id, nombre, fechaInicio, meses, nivel, cashback, plan } = data;
+  const year = new Date().getFullYear();
+
+  applyTierStyles(nivel);
+
+  const sealMap = { miembro: `Activo ${year}`, plus: `Plus · ${year}`, premium: `Premium · ${year}` };
+  document.getElementById('sealLabel').textContent  = sealMap[nivel] || `Activo ${year}`;
+  document.getElementById('clientName').textContent = nombre;
+  document.getElementById('clientSince').textContent = formatFechaInicio(fechaInicio) + (plan ? ` — ${plan}` : '');
+  document.getElementById('cardId').textContent     = id.replace('-', ' · ');
+  document.getElementById('cardYear').textContent   = year;
+
+  const alert = getAlertText(nivel, meses);
+  document.getElementById('alertTitle').textContent = alert.title;
+  document.getElementById('alertBody').textContent  = alert.body;
+
+  const hasCashback = (nivel === 'plus' || nivel === 'premium') && cashback > 0;
+  document.getElementById('cashbackStrip').style.display = hasCashback ? 'flex' : 'none';
+  if (hasCashback) document.getElementById('cashbackVal').textContent = formatCLP(cashback);
+
+  const showReferral = nivel === 'plus' || nivel === 'premium';
+  document.getElementById('referralSection').style.display = showReferral ? 'block' : 'none';
+  document.getElementById('refId').textContent  = id;
+  document.getElementById('refBtn').onclick      = () => copyLink(id);
+
+  const list = document.getElementById('benefitList');
+  list.innerHTML = '';
+  getBenefits(nivel).forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'benefit-row ' + (b.u ? 'unlocked' : 'locked');
+    row.innerHTML = `
+      <div class="benefit-ico">${b.ico}</div>
+      <div class="benefit-info">
+        <div class="benefit-name">${b.name}</div>
+        <div class="benefit-detail">${b.detail}</div>
+      </div>
+      <div class="benefit-right">
+        <div class="benefit-pct ${b.u ? '' : 'locked-val'}">${b.val}</div>
+        <div class="benefit-tag ${b.u ? '' : 'locked-tag'}">${b.tag}</div>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  updateClock();
+  updatePromoBadge();
+  setInterval(updateClock, 30000);
+
+  document.getElementById('loading').style.display    = 'none';
+  document.getElementById('cardView').style.display   = 'block';
+  document.getElementById('navBar').style.display     = 'flex';
+}
+
+function showError(msg, code) {
+  document.getElementById('errMsg').textContent  = msg;
+  document.getElementById('errCode').textContent = code || '';
+  document.getElementById('loading').style.display     = 'none';
+  document.getElementById('errorScreen').style.display = 'flex';
+}
+
+function copyLink(id) {
+  const url  = `${location.origin}${location.pathname}?id=${id}`;
+  const btn  = document.getElementById('refBtn');
+  navigator.clipboard.writeText(url).catch(() => {});
+  btn.textContent = '¡Enlace copiado!';
+  setTimeout(() => { btn.innerHTML = `Compartir enlace · <span id="refId">${id}</span>`; }, 2200);
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const id     = (params.get('id') || '').trim().toUpperCase();
+
+  if (!id) {
+    showError('No se especificó un código de cliente. Escanea el QR entregado en recepción.');
+    return;
+  }
+
+  try {
+    const res  = await fetch(`${API_URL}?id=${encodeURIComponent(id)}`);
+    const json = await res.json();
+
+    if (!json.ok) {
+      showError(
+        'Este código no corresponde a ningún cliente registrado. Consulta en recepción.',
+        id
+      );
+      return;
+    }
+
+    renderCard(json.data);
+  } catch (err) {
+    showError(
+      'No se pudo cargar la tarjeta. Verifica tu conexión e intenta nuevamente.',
+      err.message
+    );
+  }
+}
+
+init();
+</script>
+</body>
+</html>

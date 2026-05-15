@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HT in Motion — Sistema de Fidelidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100vh; background: #050508;
+  font-family: 'DM Sans', sans-serif; color: #f0eef8;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 24px;
+}
+.wrap { text-align: center; max-width: 320px; }
+.wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 300; letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.sub {
+  font-size: 9px; letter-spacing: 0.32em; text-transform: uppercase;
+  color: #6b697a; margin-bottom: 40px;
+}
+.rule { height: 1px; background: rgba(100,32,200,0.25); margin: 0 auto 40px; width: 48px; }
+.message {
+  font-size: 13px; color: #6b697a; line-height: 1.8;
+}
+.message strong { color: #9d6eee; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="wordmark">HT in Motion</div>
+  <div class="sub">Salud · Entrenamiento · Rehabilitación</div>
+  <div class="rule"></div>
+  <div class="message">
+    Tu tarjeta digital está disponible<br>
+    en el enlace personalizado que<br>
+    recibiste en recepción.<br><br>
+    <strong>¿No tienes tu enlace?</strong><br>
+    Consulta en recepción o escríbenos.
+  </div>
+</div>
+<script>
+  // Si llegan con ?id=HTM-XXXXX en la raíz, redirigir a /cliente/
+  const id = new URLSearchParams(window.location.search).get('id');
+  if (id) window.location.replace('./cliente/?id=' + encodeURIComponent(id));
+</script>
+</body>
+</html>
