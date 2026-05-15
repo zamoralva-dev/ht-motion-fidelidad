@@ -426,8 +426,12 @@ function getAlertText(nivel, meses) {
 function formatFechaInicio(fechaStr) {
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const parts = fechaStr.split('-');
-  if (parts.length < 2) return fechaStr;
-  return `Miembro desde ${MESES[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+  if (parts.length >= 3 && parts[0].length === 4) {
+    return `Miembro desde ${MESES[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+  }
+  const d = new Date(fechaStr);
+  if (!isNaN(d)) return `Miembro desde ${MESES[d.getMonth()]} ${d.getFullYear()}`;
+  return fechaStr;
 }
 
 function formatCLP(amount) {
